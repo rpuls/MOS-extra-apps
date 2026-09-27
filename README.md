@@ -20,7 +20,7 @@ Removing the source stops offering these apps and stops their updates. Anything 
 
 | App | What it does |
 | --- | --- |
-| [`epson2paperless`](.mos/epson2paperless/) | Asks an Epson scanner on your network for a scan and files it in Paperless-ngx. Packages [`mtheuma/epson2paperless`](https://github.com/mtheuma/epson2paperless). Triggered by an HTTP request rather than by the scanner's own Scan button — [why](.mos/epson2paperless/README.md#what-this-package-cannot-do). |
+| [`epson2paperless`](.mos/epson2paperless/) | Asks an Epson scanner on your network for a scan and files it in Paperless-ngx. A plugin for the official `paperless-ngx` package: install that first and connect the two, and the Paperless address comes from the connection. Packages [`mtheuma/epson2paperless`](https://github.com/mtheuma/epson2paperless). Triggered by an HTTP request rather than by the scanner's own Scan button — [why](.mos/epson2paperless/README.md#what-this-package-cannot-do). |
 
 ## Layout
 

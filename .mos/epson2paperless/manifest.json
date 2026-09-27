@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "epson2paperless",
   "name": "Epson to Paperless",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "appVersion": "0.12.0",
   "minimumMosVersion": "0.20.0",
   "summary": "Pulls a scan from an Epson scanner on your network and files it straight into Paperless-ngx.",
@@ -15,12 +15,6 @@
         "id": "printerIp",
         "type": "text",
         "label": "Scanner IP address",
-        "required": true
-      },
-      {
-        "id": "paperlessUrl",
-        "type": "url",
-        "label": "Paperless address",
         "required": true
       },
       {
@@ -70,7 +64,6 @@
           "LOG_FORMAT": "json",
           "OUTPUT_DIR": "/output",
           "PAPERLESS_TOKEN": "${secret.paperlessToken}",
-          "PAPERLESS_URL": "${config.paperlessUrl}",
           "PRINTER_IP": "${config.printerIp}",
           "SCAN_FORMAT": "${config.scanFormat}",
           "SCAN_SIDES": "${config.scanSides}",
@@ -90,13 +83,43 @@
     "type": "http",
     "url": "http://epson2paperless:3000/health"
   },
+  "configTargets": {
+    "paperlessApi": {
+      "kind": "service-env",
+      "service": "epson2paperless",
+      "allowedKeys": ["PAPERLESS_URL"]
+    }
+  },
+  "integrations": {
+    "documentArchive": {
+      "accepts": [
+        {
+          "type": "document-archive",
+          "protocol": "paperless-ngx-rest",
+          "interfaceVersion": 1
+        }
+      ],
+      "title": "Paperless-ngx archive",
+      "apply": {
+        "kind": "service-env",
+        "target": "paperlessApi",
+        "values": {
+          "PAPERLESS_URL": "${import.documentArchive.internalBaseUrl}"
+        }
+      }
+    }
+  },
+  "usefulness": {
+    "requiresOneOf": ["document-archive"],
+    "emptyState": "Install Paperless-ngx and connect it to this app; without it there is nowhere to file a scan."
+  },
   "catalog": {
-    "description": "Epson to Paperless asks an Epson scanner on your network for a scan, then uploads the result to Paperless-ngx over its API. Under MOS a scan is started by an HTTP request to this app rather than by the Scan button on the scanner's own panel: the panel path needs the app to sit directly on your home network, which MOS does not give an app it has not reviewed. Everything after the trigger is the same — the app talks to the scanner, collects the pages, and files the document.",
+    "description": "Epson to Paperless is a plugin for the Paperless-ngx app in MOS. It asks an Epson scanner on your network for a scan and files the result in Paperless over its API. Install Paperless first, connect the two, and this app takes the Paperless address from that connection; the only thing it asks you for is the scanner and a Paperless token. Under MOS a scan is started by an HTTP request to this app rather than by the Scan button on the scanner's own panel: the panel path needs the app to sit directly on your home network, which MOS does not give an app it has not reviewed. Everything after the trigger is the same — the app talks to the scanner, collects the pages, and files the document.",
     "tags": ["scanner", "epson", "paperless", "documents", "scanning"],
     "features": [
       {
         "title": "Scan straight into Paperless",
-        "body": "Pages go from the scanner to Paperless-ngx without a shared folder, a watched directory, or a second machine in between."
+        "body": "Connect the two apps in MOS and pages go from the scanner into Paperless-ngx without a shared folder, a watched directory, or a second machine in between."
       },
       {
         "title": "Triggered by a request you control",
@@ -113,7 +136,7 @@
       "description": "A single small Node process that does nothing between scans."
     },
     "privacy": {
-      "summary": "Talks only to the scanner on your network and to the Paperless address you give it.",
+      "summary": "Talks only to the scanner on your network and to the Paperless it is connected to.",
       "notes": [
         "No telemetry, analytics, or upstream accounts.",
         "Scans are held in this app's own storage only until Paperless accepts them.",
@@ -125,62 +148,73 @@
       "docs": "https://github.com/mtheuma/epson2paperless#readme"
     }
   },
-  "onboarding": {
-    "title": "Starting a scan",
-    "summary": "Paperless needs to hand you an API token, and scans are started by a request to this app's address.",
-    "sections": [
-      {
-        "id": "paperless-token",
-        "type": "steps",
-        "title": "Get the Paperless token",
-        "steps": [
-          "Open Paperless-ngx and sign in as the user the scans should belong to.",
-          "Go to the Django admin at /admin/, open Auth Token, and add a token for that user.",
-          "Copy the token and paste it into this app's Paperless API token field in Suite Manager."
-        ]
-      },
-      {
-        "id": "trigger",
-        "type": "values",
-        "title": "Where to send the trigger",
-        "values": [
-          {
-            "label": "Scan URL",
-            "value": "${app.publicUrl}scan",
-            "copy": true
-          },
-          {
-            "label": "Method",
-            "value": "POST",
-            "copy": false
-          },
-          {
-            "label": "Header",
-            "value": "Authorization: Bearer <scan trigger token>",
-            "copy": true
-          }
-        ]
-      },
-      {
-        "id": "trigger-token",
-        "type": "note",
-        "title": "About the scan trigger token",
-        "body": "MOS generated this token at install. Read it from this app's settings in Suite Manager and put it in the bearer header. Without the header the scan path answers 404, so nothing can start a scan by guessing the address."
-      },
-      {
-        "id": "panel-button",
-        "type": "warning",
-        "title": "The scanner's own Scan button does not reach this app",
-        "body": "Pressing Scan to Computer on the scanner needs the app to receive a broadcast from your home network and to answer a connection from the scanner. MOS gives an app it has not reviewed neither, so the destination never appears on the panel. Start scans with the request above instead, from a phone shortcut, a home-automation rule, or a button."
-      },
-      {
-        "id": "sides",
-        "type": "note",
-        "title": "Format and sides",
-        "body": "Nothing on the panel chooses these when the scan is triggered by a request, so the two setup fields decide. Set sides to duplex only if your scanner has a double-sided feeder; a duplex request to a scanner without one is refused rather than scanned. A single request can override both without changing the settings, as ?format=pdf&sides=simplex on the scan URL."
-      }
-    ]
-  },
+"onboarding": {
+  "title": "Connecting it to Paperless",
+  "summary": "Paperless hands you the token before you install this app, and hands over its address when you connect the two.",
+  "sections": [
+    {
+      "id": "paperless-token",
+      "type": "steps",
+      "title": "Create the Paperless token first",
+      "steps": [
+        "Install Paperless-ngx and sign in as an administrator.",
+        "Make a separate Paperless user for the scanner rather than using your own account, and give it only the permissions it needs. A Paperless token carries every right its user has, including reading each document that user can see.",
+        "Sign in as that user, open the user menu, go to My Profile, and copy the API auth token shown there — use the regenerate control if the field is empty.",
+        "Paste it into this app's Paperless API token field while installing it. MOS cannot create this token for you: Paperless mints it inside its own database."
+      ]
+    },
+    {
+      "id": "connect",
+      "type": "steps",
+      "title": "Connect it to Paperless",
+      "steps": [
+        "With both apps installed and running, open this app in Suite Manager.",
+        "Under its connections, choose Connect Paperless-ngx.",
+        "That is what gives this app the Paperless address, so nothing is filed until you do it — scans still happen and are kept in this app's storage, but they stay there."
+      ]
+    },
+    {
+      "id": "trigger",
+      "type": "values",
+      "title": "Where to send the trigger",
+      "values": [
+        {
+          "label": "Scan URL",
+          "value": "${app.publicUrl}scan",
+          "copy": true
+        },
+        {
+          "label": "Method",
+          "value": "POST",
+          "copy": false
+        },
+        {
+          "label": "Header",
+          "value": "Authorization: Bearer <scan trigger token>",
+          "copy": true
+        }
+      ]
+    },
+    {
+      "id": "trigger-token",
+      "type": "note",
+      "title": "About the scan trigger token",
+      "body": "MOS generated this token at install. Read it from this app's settings in Suite Manager and put it in the bearer header. Without the header the scan path answers 404, so nothing can start a scan by guessing the address."
+    },
+    {
+      "id": "panel-button",
+      "type": "warning",
+      "title": "The scanner's own Scan button does not reach this app",
+      "body": "Pressing Scan to Computer on the scanner needs the app to receive a broadcast from your home network and to answer a connection from the scanner. MOS gives an app it has not reviewed neither, so the destination never appears on the panel. Start scans with the request above instead, from a phone shortcut, a home-automation rule, or a button."
+    },
+    {
+      "id": "sides",
+      "type": "note",
+      "title": "Format and sides",
+      "body": "Nothing on the panel chooses these when the scan is triggered by a request, so the two setup fields decide. Set sides to duplex only if your scanner has a double-sided feeder; a duplex request to a scanner without one is refused rather than scanned. A single request can override both without changing the settings, as ?format=pdf&sides=simplex on the scan URL."
+    }
+  ]
+},
   "update": {
     "backupRequired": false,
     "downtime": "brief",
