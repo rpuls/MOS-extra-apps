@@ -1,4 +1,4 @@
-# MOS handy tools
+# MOS extra apps
 
 A personal, **unofficial** MOS app catalog: small self-hosted services that are useful to have on a server but will never be worth a place in the official [My Own Suite](https://github.com/rpuls/my-own-suite) catalog, because almost nobody needs them.
 
@@ -9,7 +9,7 @@ It is public so anyone can use it. That is not the same as it being reviewed. No
 Paste this into the search box on the **Apps** screen in Suite Manager:
 
 ```
-https://github.com/rpuls/MOS-handy-tools
+https://github.com/rpuls/MOS-extra-apps
 ```
 
 MOS resolves the default branch to a commit, downloads that commit, and shows you every app this repository publishes along with what each one is asking for. Install one from there, or choose **Add this source** to keep the repository: its apps then sit on the Apps screen under their own heading, and the source appears in **Settings → App sources you added**, where it can be refreshed or removed.
