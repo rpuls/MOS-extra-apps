@@ -1,0 +1,189 @@
+{
+  "manifestVersion": 1,
+  "id": "epson2paperless",
+  "name": "Epson to Paperless",
+  "version": "1.0.0",
+  "appVersion": "0.12.0",
+  "minimumMosVersion": "0.20.0",
+  "summary": "Pulls a scan from an Epson scanner on your network and files it straight into Paperless-ngx.",
+  "category": "tools",
+  "architectures": ["amd64", "arm64"],
+  "icon": "icon.svg",
+  "setup": {
+    "fields": [
+      {
+        "id": "printerIp",
+        "type": "text",
+        "label": "Scanner IP address",
+        "required": true
+      },
+      {
+        "id": "paperlessUrl",
+        "type": "url",
+        "label": "Paperless address",
+        "required": true
+      },
+      {
+        "id": "paperlessToken",
+        "type": "password",
+        "label": "Paperless API token",
+        "required": true,
+        "secret": true,
+        "redactedLabel": "Stored on the server"
+      },
+      {
+        "id": "scanTriggerToken",
+        "type": "password",
+        "label": "Scan trigger token",
+        "required": true,
+        "secret": true,
+        "redactedLabel": "Generated at install",
+        "generated": {
+          "kind": "random",
+          "bytes": 32,
+          "encoding": "base64url"
+        }
+      },
+      {
+        "id": "scanFormat",
+        "type": "text",
+        "label": "Scan format (pdf or jpg)",
+        "required": false,
+        "default": "pdf"
+      },
+      {
+        "id": "scanSides",
+        "type": "text",
+        "label": "Sides to scan (simplex or duplex)",
+        "required": false,
+        "default": "simplex"
+      }
+    ]
+  },
+  "resources": {
+    "services": {
+      "epson2paperless": {
+        "dockerfile": "Dockerfile",
+        "internalPort": 3000,
+        "env": {
+          "HEALTH_PORT": "3000",
+          "LOG_FORMAT": "json",
+          "OUTPUT_DIR": "/output",
+          "PAPERLESS_TOKEN": "${secret.paperlessToken}",
+          "PAPERLESS_URL": "${config.paperlessUrl}",
+          "PRINTER_IP": "${config.printerIp}",
+          "SCAN_FORMAT": "${config.scanFormat}",
+          "SCAN_SIDES": "${config.scanSides}",
+          "SCAN_TRIGGER_TOKEN": "${secret.scanTriggerToken}"
+        },
+        "volumes": ["scan-output:/output"]
+      }
+    }
+  },
+  "routes": [
+    {
+      "host": "epson2paperless",
+      "service": "epson2paperless"
+    }
+  ],
+  "health": {
+    "type": "http",
+    "url": "http://epson2paperless:3000/health"
+  },
+  "catalog": {
+    "description": "Epson to Paperless asks an Epson scanner on your network for a scan, then uploads the result to Paperless-ngx over its API. Under MOS a scan is started by an HTTP request to this app rather than by the Scan button on the scanner's own panel: the panel path needs the app to sit directly on your home network, which MOS does not give an app it has not reviewed. Everything after the trigger is the same — the app talks to the scanner, collects the pages, and files the document.",
+    "tags": ["scanner", "epson", "paperless", "documents", "scanning"],
+    "features": [
+      {
+        "title": "Scan straight into Paperless",
+        "body": "Pages go from the scanner to Paperless-ngx without a shared folder, a watched directory, or a second machine in between."
+      },
+      {
+        "title": "Triggered by a request you control",
+        "body": "A token MOS generates at install guards the trigger, so a phone shortcut, a home-automation rule, or a smart button can start a scan."
+      },
+      {
+        "title": "A failed upload keeps the pages",
+        "body": "Scans are written to the app's own storage first and only removed once Paperless has accepted them."
+      }
+    ],
+    "resourceHint": {
+      "level": "low",
+      "label": "Low",
+      "description": "A single small Node process that does nothing between scans."
+    },
+    "privacy": {
+      "summary": "Talks only to the scanner on your network and to the Paperless address you give it.",
+      "notes": [
+        "No telemetry, analytics, or upstream accounts.",
+        "Scans are held in this app's own storage only until Paperless accepts them.",
+        "The scanner's certificate is not verified by default; Epson ships a self-signed one with no published fingerprint."
+      ]
+    },
+    "links": {
+      "repository": "https://github.com/mtheuma/epson2paperless",
+      "docs": "https://github.com/mtheuma/epson2paperless#readme"
+    }
+  },
+  "onboarding": {
+    "title": "Starting a scan",
+    "summary": "Paperless needs to hand you an API token, and scans are started by a request to this app's address.",
+    "sections": [
+      {
+        "id": "paperless-token",
+        "type": "steps",
+        "title": "Get the Paperless token",
+        "steps": [
+          "Open Paperless-ngx and sign in as the user the scans should belong to.",
+          "Go to the Django admin at /admin/, open Auth Token, and add a token for that user.",
+          "Copy the token and paste it into this app's Paperless API token field in Suite Manager."
+        ]
+      },
+      {
+        "id": "trigger",
+        "type": "values",
+        "title": "Where to send the trigger",
+        "values": [
+          {
+            "label": "Scan URL",
+            "value": "${app.publicUrl}scan",
+            "copy": true
+          },
+          {
+            "label": "Method",
+            "value": "POST",
+            "copy": false
+          },
+          {
+            "label": "Header",
+            "value": "Authorization: Bearer <scan trigger token>",
+            "copy": true
+          }
+        ]
+      },
+      {
+        "id": "trigger-token",
+        "type": "note",
+        "title": "About the scan trigger token",
+        "body": "MOS generated this token at install. Read it from this app's settings in Suite Manager and put it in the bearer header. Without the header the scan path answers 404, so nothing can start a scan by guessing the address."
+      },
+      {
+        "id": "panel-button",
+        "type": "warning",
+        "title": "The scanner's own Scan button does not reach this app",
+        "body": "Pressing Scan to Computer on the scanner needs the app to receive a broadcast from your home network and to answer a connection from the scanner. MOS gives an app it has not reviewed neither, so the destination never appears on the panel. Start scans with the request above instead, from a phone shortcut, a home-automation rule, or a button."
+      },
+      {
+        "id": "sides",
+        "type": "note",
+        "title": "Format and sides",
+        "body": "Nothing on the panel chooses these when the scan is triggered by a request, so the two setup fields decide. Set sides to duplex only if your scanner has a double-sided feeder; a duplex request to a scanner without one is refused rather than scanned. A single request can override both without changing the settings, as ?format=pdf&sides=simplex on the scan URL."
+      }
+    ]
+  },
+  "update": {
+    "backupRequired": false,
+    "downtime": "brief",
+    "rollback": "safe"
+  }
+}
