@@ -2,9 +2,9 @@
   "manifestVersion": 1,
   "id": "epson2paperless",
   "name": "Epson to Paperless",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "appVersion": "0.12.0",
-  "minimumMosVersion": "0.20.0",
+  "minimumMosVersion": "0.21.0",
   "summary": "Pulls a scan from an Epson scanner on your network and files it straight into Paperless-ngx.",
   "category": "tools",
   "architectures": ["amd64", "arm64"],
@@ -76,7 +76,8 @@
   "routes": [
     {
       "host": "epson2paperless",
-      "service": "epson2paperless"
+      "service": "epson2paperless",
+      "kind": "api"
     }
   ],
   "health": {

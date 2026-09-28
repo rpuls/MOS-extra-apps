@@ -41,7 +41,7 @@ Upstream supports more variables than these — resolution, colour mode, post-pr
 | `GET` | `/health` | Health endpoint. Reports when a scan was last *triggered*, not whether it succeeded. Unauthenticated. |
 | `POST` | `/scan` | Starts a scan. Requires `Authorization: Bearer <SCAN_TRIGGER_TOKEN>`. Answers `202` before the scan runs, `409` while one is already running, `401` on a bad token. Optional query parameters: `format`, `sides`, `postProcess`, `colorMode`. |
 
-Both are served on the package's public route, `ext-epson2paperless` under the suite domain.
+Both are served on the package's public route, `ext-epson2paperless` under the suite domain. The route is declared `"kind": "api"` because there is no page to open, so MOS shows its address for copying but no Open button and no Homepage tile; that field needs MOS 0.21.0, which is why `minimumMosVersion` is 0.21.0.
 
 ## What this package cannot do
 
